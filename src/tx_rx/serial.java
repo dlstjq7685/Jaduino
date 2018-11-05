@@ -5,9 +5,9 @@ import gnu.io.CommPortIdentifier;
 import gnu.io.PortInUseException;
 import gnu.io.SerialPort;
 
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.Enumeration;
+
 /**
  * command struct
  * ! - start
@@ -48,32 +48,39 @@ import java.util.Enumeration;
  *  Exception handler
  *  windows10 Arduino sketch commend
  */
+
+/**
+ * this class simple rx tx serial communicator
+ */
 public class serial {
 
-    final static int TIMEOUT = 100;
+    final static int TIMEOUT = 3600_000;
     final static byte[] hand = "!9000000.".getBytes();
     final static int LOW = 0;
     final static int HIGH = 255;
 
-    public static void main(String[] args) {
+    private SerialPort eq;
+    private InputStream eq_out;
+    private OutputStream eq_in;
 
-        byte[] read = new byte[1024];
+    private byte[] read_buffer = new byte[1024];
+    private byte[] send_buffer = null;
+
+    public boolean connect(){
+
         Enumeration portList = CommPortIdentifier.getPortIdentifiers();
-
         CommPortIdentifier port;
-
-        System.out.println(System.getProperty("os.name"));
-
+        byte[] read = new byte[1024];
         CommPort commPort = null;
         SerialPort serialPort = null;
         InputStream out = null;
         OutputStream in = null;
-        byte[] cmd;
+
         while(portList.hasMoreElements()){
             port = (CommPortIdentifier)portList.nextElement();
 
             if(port.getPortType() == CommPortIdentifier.PORT_SERIAL){
-                System.out.println(port.getName());
+                // System.out.println(port.getName());
 
                 try {
                     commPort = port.open("Demo application", TIMEOUT);
@@ -85,35 +92,22 @@ public class serial {
                     in = serialPort.getOutputStream();
                     out = serialPort.getInputStream();
 
-                    in.write(hand);
-                    Thread.sleep(50);
-                    out.read(read);
-                    System.out.println(new String(read));
-
-                    cmd = "!0013000.".getBytes();
-                    in.write(cmd);
-                    Thread.sleep(50);
-                    out.read(read);
-                    System.out.println(new String(read));
-
-                    cmd = "!0113001.".getBytes();
-                    in.write(cmd);
-                    Thread.sleep(50);
-                    out.read(read);
-                    System.out.println(new String(read));
-
-                    cmd = "!0113000.".getBytes();
-                    in.write(cmd);
-                    Thread.sleep(50);
-                    out.read(read);
-                    System.out.println(new String(read));
-
-                    cmd = "!0400000.".getBytes();
-                    in.write(cmd);
-                    Thread.sleep(50);
-                    out.read(read);
-                    System.out.println(new String(read));
-
+                    /**
+                     * try hand shake 5times
+                     */
+                    for(int i = 0; i < 5; i++){
+                        in.write(hand);
+                        Thread.sleep(20);
+                        out.read(read);
+                        String cmd = new String(read);
+                        if(cmd.contains("ACK")){
+                            this.eq = serialPort;
+                            eq_in = in;
+                            eq_out = out;
+                            System.out.println("Find Arduino");
+                            // return true;
+                        }
+                    }
 
                     commPort.close();
 
@@ -124,7 +118,14 @@ public class serial {
                 }
             }
         }
+        //System.out.println("Not Found")
+        return false;
+    }
 
+    public static void main(String[] args) {
+        // System.out.println(System.getProperty("os.name"));
+        serial dump = new serial();
+        dump.connect();
     }
 
 }

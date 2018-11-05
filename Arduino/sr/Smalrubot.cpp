@@ -249,6 +249,6 @@ void Smalrubot::reset() {
   #ifdef debug
     Serial.println("Reset the board to defaults.");
   #endif
-  sprintf(response, "ACK:%02d", A0);
+  sprintf(response, "ACK:%02d", PIN_COUNT);
   receivingRequest = false;
 }
